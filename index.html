@@ -1,0 +1,2283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TuProfe20Lab • Sólidos Geométricos 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+
+    <style>
+        :root {
+            --bg-base: #090914;
+            --primary: #00f2fe;
+            --accent: #fe0979;
+            --neon-green: #39ff14;
+            --neon-orange: #ff5e00;
+            --neon-purple: #bf00ff;
+            --neon-yellow: #facc15;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-base);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Tipografía LaTeX exclusiva para fórmulas y expresiones matemáticas */
+        .math-expr {
+            font-family: 'KaTeX_Main', 'Times New Roman', Georgia, serif;
+            letter-spacing: 0.02em;
+        }
+
+        .math-var {
+            font-family: 'KaTeX_Math', 'Times New Roman', Georgia, serif;
+            font-style: italic;
+        }
+
+        @keyframes grid-flow {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+        .animate-grid-flow {
+            animation: grid-flow 2.5s linear infinite;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(18px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Botones táctiles 3D */
+        .gp-btn {
+            position: relative;
+            font-weight: 900;
+            border-radius: 1rem;
+            box-shadow: 0 6px 0 0 rgba(0,0,0,0.65);
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+        }
+        .gp-btn:active {
+            box-shadow: 0 0px 0 0 rgba(0,0,0,0.65);
+            transform: translateY(6px);
+        }
+        .gp-btn-cyan {
+            background: linear-gradient(to bottom, #22d3ee, #0891b2);
+            color: #000000;
+            border-bottom: 4px solid #155e75;
+        }
+        .gp-btn-pink {
+            background: linear-gradient(to bottom, #ec4899, #be185d);
+            color: #ffffff;
+            border-bottom: 4px solid #831843;
+        }
+        .gp-btn-green {
+            background: linear-gradient(to bottom, #4ade80, #16a34a);
+            color: #000000;
+            border-bottom: 4px solid #166534;
+        }
+        .gp-btn-yellow {
+            background: linear-gradient(to bottom, #fde047, #ca8a04);
+            color: #000000;
+            border-bottom: 4px solid #854d0e;
+        }
+        .gp-btn-slate {
+            background: linear-gradient(to bottom, #475569, #1e293b);
+            color: #ffffff;
+            border-bottom: 4px solid #0f172a;
+        }
+
+        /* Inputs interactivos para el alumno */
+        .student-input {
+            background: rgba(15, 23, 42, 0.95);
+            border: 2px solid #475569;
+            color: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .student-input:focus {
+            outline: none;
+            border-color: #00f2fe;
+            box-shadow: 0 0 16px rgba(0, 242, 254, 0.45);
+            background: #0f172a;
+        }
+        .student-input.valid-input {
+            border-color: #39ff14;
+            color: #39ff14;
+            background: rgba(20, 83, 45, 0.35);
+            box-shadow: 0 0 14px rgba(57, 255, 20, 0.3);
+        }
+        .student-input.invalid-input {
+            border-color: #fe0979;
+            color: #fe0979;
+            background: rgba(131, 24, 67, 0.35);
+        }
+        .student-input.solving-input {
+            border-color: #facc15;
+            color: #facc15;
+            background: rgba(113, 63, 18, 0.35);
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #090914; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+    </style>
+</head>
+<body class="min-h-screen font-sans select-none relative flex flex-col justify-between">
+
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-[#090914]">
+        <div class="absolute top-[5%] left-1/2 -translate-x-1/2 w-[750px] h-[750px] rounded-full bg-gradient-to-b from-pink-600 to-transparent opacity-15 blur-[110px]"></div>
+        <div class="absolute bottom-[-25%] left-[-50%] w-[200%] h-[110%] opacity-25 animate-grid-flow" style="
+            background-image: linear-gradient(rgba(0, 242, 254, 0.45) 2px, transparent 2px), linear-gradient(90deg, rgba(0, 242, 254, 0.45) 2px, transparent 2px);
+            background-size: 90px 90px;
+            transform: perspective(1000px) rotateX(70deg);
+            box-shadow: inset 0 120px 120px #090914;
+        "></div>
+    </div>
+
+    <section id="coverPortalSection" class="relative z-10 max-w-6xl w-full mx-auto my-auto p-4 sm:p-8 animate-fade-in">
+        <div class="bg-black/70 p-6 sm:p-12 rounded-[3rem] backdrop-blur-2xl border border-white/10 shadow-[0_0_120px_rgba(0,242,254,0.22)] flex flex-col items-center text-center">
+            <div class="inline-flex items-center gap-2 bg-cyan-950/90 border border-cyan-500/60 px-4 py-1.5 rounded-full mb-3">
+                <i class="fa-solid fa-cubes text-cyan-400 text-xs"></i>
+                <span class="text-cyan-300 font-black tracking-[0.25em] uppercase text-xs sm:text-sm">
+                    SIMULADOR INTERACTIVO • AULA N.° 2 PRIMARIA
+                </span>
+            </div>
+
+            <h1 class="text-3xl sm:text-6xl font-black mb-1 tracking-tight text-white" style="text-shadow: 0 0 35px rgba(0,242,254,0.6)">
+                TuProfe20Lab
+            </h1>
+            <h2 class="text-3xl sm:text-6xl font-black leading-tight mb-5 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-pink-500 to-yellow-400">
+                En Sólidos Geométricos
+            </h2>
+            <p class="text-slate-300 text-base sm:text-xl max-w-3xl mb-8 font-medium">
+                Explora los <b>3 Prismas Rectos</b> y las <b>3 Pirámides Rectas</b> en 3D completo. Pasa el mouse por sus <b>Caras, Vértices y Aristas</b> para iluminarlos, comprueba la <b>Relación de Euler</b> (<span class="math-expr"><span class="math-var">C</span> + <span class="math-var">V</span> = <span class="math-var">A</span> + 2</span>) y calcula el <b>Área Lateral, Área Total y Volumen</b>.
+            </p>
+
+            <!-- Grid de los 6 Ejercicios -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full">
+
+                <!-- Ejercicio 1: Prisma Triangular -->
+                <div onclick="enterExerciseFromCover(0)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-cyan-400 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(0,242,254,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-cyan-400/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,12 20,34 80,34" fill="rgba(0,242,254,0.28)" stroke="#00f2fe" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="20,34 50,12 50,64 20,86" fill="rgba(0,242,254,0.12)" stroke="#00f2fe" stroke-width="2.5" stroke-dasharray="4 3"/>
+                                <polygon points="20,34 80,34 80,86 20,86" fill="rgba(254,9,121,0.22)" stroke="#00f2fe" stroke-width="3" stroke-linejoin="round"/>
+                                <circle cx="50" cy="12" r="4.5" fill="#facc15"/>
+                                <circle cx="20" cy="34" r="4.5" fill="#facc15"/>
+                                <circle cx="80" cy="34" r="4.5" fill="#facc15"/>
+                                <circle cx="20" cy="86" r="4.5" fill="#facc15"/>
+                                <circle cx="80" cy="86" r="4.5" fill="#facc15"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-cyan-950 text-cyan-300 border border-cyan-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 1 • PRISMA
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Prisma Triangular</h3>
+                            <p class="text-xs text-cyan-300 font-bold mt-0.5">Base de 3 lados (Triángulo)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-cyan-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ejercicio 2: Prisma Cuadrangular -->
+                <div onclick="enterExerciseFromCover(1)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-yellow-400 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(250,204,21,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-yellow-400/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="34,14 82,14 66,32 18,32" fill="rgba(250,204,21,0.3)" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="18,32 66,32 66,86 18,86" fill="rgba(250,204,21,0.18)" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="66,32 82,14 82,68 66,86" fill="rgba(255,94,0,0.28)" stroke="#facc15" stroke-width="3" stroke-linejoin="round"/>
+                                <circle cx="18" cy="32" r="4.5" fill="#39ff14"/>
+                                <circle cx="66" cy="32" r="4.5" fill="#39ff14"/>
+                                <circle cx="82" cy="14" r="4.5" fill="#39ff14"/>
+                                <circle cx="66" cy="86" r="4.5" fill="#39ff14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-yellow-950 text-yellow-300 border border-yellow-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 2 • PRISMA
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Prisma Cuadrangular</h3>
+                            <p class="text-xs text-yellow-300 font-bold mt-0.5">Base de 4 lados (Cuadrado)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-yellow-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ejercicio 3: Prisma Hexagonal -->
+                <div onclick="enterExerciseFromCover(2)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-green-400 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(57,255,20,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-green-400/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="32,12 68,12 84,24 68,36 32,36 16,24" fill="rgba(57,255,20,0.28)" stroke="#39ff14" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="16,24 32,36 32,84 16,72" fill="rgba(0,242,254,0.2)" stroke="#39ff14" stroke-width="2.5"/>
+                                <polygon points="32,36 68,36 68,84 32,84" fill="rgba(57,255,20,0.18)" stroke="#39ff14" stroke-width="3"/>
+                                <polygon points="68,36 84,24 84,72 68,84" fill="rgba(0,242,254,0.25)" stroke="#39ff14" stroke-width="2.5"/>
+                                <circle cx="32" cy="36" r="4" fill="#facc15"/>
+                                <circle cx="68" cy="36" r="4" fill="#facc15"/>
+                                <circle cx="32" cy="84" r="4" fill="#facc15"/>
+                                <circle cx="68" cy="84" r="4" fill="#facc15"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-green-950 text-green-300 border border-green-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 3 • PRISMA
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Prisma Hexagonal</h3>
+                            <p class="text-xs text-green-300 font-bold mt-0.5">Base de 6 lados (Hexágono)</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-green-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ejercicio 4: Pirámide Triangular -->
+                <div onclick="enterExerciseFromCover(3)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-pink-500 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(254,9,121,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-pink-500/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,12 16,78 56,88" fill="rgba(254,9,121,0.28)" stroke="#fe0979" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="50,12 56,88 86,70" fill="rgba(255,94,0,0.25)" stroke="#fe0979" stroke-width="3" stroke-linejoin="round"/>
+                                <line x1="16" y1="78" x2="86" y2="70" stroke="#fe0979" stroke-width="2" stroke-dasharray="4 3"/>
+                                <circle cx="50" cy="12" r="5" fill="#facc15"/>
+                                <circle cx="16" cy="78" r="4.5" fill="#00f2fe"/>
+                                <circle cx="56" cy="88" r="4.5" fill="#00f2fe"/>
+                                <circle cx="86" cy="70" r="4.5" fill="#00f2fe"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-pink-950 text-pink-300 border border-pink-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 4 • PIRÁMIDE
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Pirámide Triangular</h3>
+                            <p class="text-xs text-pink-300 font-bold mt-0.5">Base de 3 lados + Cúspide</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-pink-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ejercicio 5: Pirámide Cuadrangular -->
+                <div onclick="enterExerciseFromCover(4)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-orange-500 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(255,94,0,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-orange-500/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,12 16,76 62,86" fill="rgba(255,94,0,0.28)" stroke="#ff5e00" stroke-width="3" stroke-linejoin="round"/>
+                                <polygon points="50,12 62,86 86,66" fill="rgba(250,204,21,0.25)" stroke="#ff5e00" stroke-width="3" stroke-linejoin="round"/>
+                                <circle cx="50" cy="12" r="5" fill="#facc15"/>
+                                <circle cx="16" cy="76" r="4.5" fill="#39ff14"/>
+                                <circle cx="62" cy="86" r="4.5" fill="#39ff14"/>
+                                <circle cx="86" cy="66" r="4.5" fill="#39ff14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-orange-950 text-orange-300 border border-orange-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 5 • PIRÁMIDE
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Pirámide Cuadrangular</h3>
+                            <p class="text-xs text-orange-300 font-bold mt-0.5">Base de 4 lados + Cúspide</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-orange-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Ejercicio 6: Pirámide Hexagonal -->
+                <div onclick="enterExerciseFromCover(5)" class="group cursor-pointer bg-slate-900/85 hover:bg-slate-800/95 border-[3px] border-slate-700 hover:border-purple-500 p-5 rounded-[2.2rem] transition-all duration-300 flex flex-col justify-between text-left shadow-xl hover:shadow-[0_0_35px_rgba(191,0,255,0.35)]">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-20 h-20 shrink-0 rounded-2xl bg-black border-2 border-purple-500/70 flex items-center justify-center p-2 group-hover:scale-105 transition-transform">
+                            <svg viewBox="0 0 100 100" class="w-full h-full">
+                                <polygon points="50,10 14,72 36,88" fill="rgba(191,0,255,0.25)" stroke="#bf00ff" stroke-width="2.8" stroke-linejoin="round"/>
+                                <polygon points="50,10 36,88 64,88" fill="rgba(0,242,254,0.25)" stroke="#bf00ff" stroke-width="2.8" stroke-linejoin="round"/>
+                                <polygon points="50,10 64,88 86,72" fill="rgba(254,9,121,0.25)" stroke="#bf00ff" stroke-width="2.8" stroke-linejoin="round"/>
+                                <circle cx="50" cy="10" r="5" fill="#facc15"/>
+                                <circle cx="14" cy="72" r="4" fill="#00f2fe"/>
+                                <circle cx="36" cy="88" r="4" fill="#00f2fe"/>
+                                <circle cx="64" cy="88" r="4" fill="#00f2fe"/>
+                                <circle cx="86" cy="72" r="4" fill="#00f2fe"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="inline-block bg-purple-950 text-purple-300 border border-purple-700 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase mb-1">
+                                EJERCICIO 6 • PIRÁMIDE
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-tight">Pirámide Hexagonal</h3>
+                            <p class="text-xs text-purple-300 font-bold mt-0.5">Base de 6 lados + Cúspide</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-3 border-t border-white/10">
+                        <span class="text-xs text-slate-400 font-bold">Euler: <span class="math-expr text-white">C + V = A + 2</span></span>
+                        <span class="text-purple-400 font-black text-xs uppercase flex items-center gap-1.5 group-hover:translate-x-1.5 transition-transform">
+                            EXPLORAR 3D <i class="fa-solid fa-play text-[10px]"></i>
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <div id="labWorkspaceWrapper" class="hidden relative z-10 flex-1 flex flex-col justify-between max-w-[1460px] w-full mx-auto p-3 sm:p-5 gap-4">
+
+        <!-- HUD Header Superior -->
+        <header class="bg-black/65 backdrop-blur-2xl border border-white/10 rounded-[2rem] px-4 py-3 sm:px-7 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xl">
+            <div class="flex items-center gap-3">
+                <button onclick="openCoverPortal()" class="gp-btn gp-btn-slate px-4 py-2.5 text-xs sm:text-sm gap-2">
+                    <i class="fa-solid fa-table-cells-large text-cyan-400"></i>
+                    <span>PORTADA</span>
+                </button>
+                <div>
+                    <h1 class="text-base sm:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500 uppercase">
+                        TUPROFE20LAB • SÓLIDOS GEOMÉTRICOS
+                    </h1>
+                    <p id="exerciseSubtitleBadge" class="text-[11px] text-slate-400 font-bold tracking-widest uppercase">
+                        AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 1 DE 6
+                    </p>
+                </div>
+            </div>
+
+            <!-- Botones de los 6 sólidos -->
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button onclick="selectSolidExercise(0)" id="solidBtn-0" class="px-3 py-2 rounded-xl font-black text-xs transition-all">1) Prisma Triang.</button>
+                <button onclick="selectSolidExercise(1)" id="solidBtn-1" class="px-3 py-2 rounded-xl font-black text-xs transition-all">2) Prisma Cuadr.</button>
+                <button onclick="selectSolidExercise(2)" id="solidBtn-2" class="px-3 py-2 rounded-xl font-black text-xs transition-all">3) Prisma Hexag.</button>
+                <button onclick="selectSolidExercise(3)" id="solidBtn-3" class="px-3 py-2 rounded-xl font-black text-xs transition-all">4) Pirámide Triang.</button>
+                <button onclick="selectSolidExercise(4)" id="solidBtn-4" class="px-3 py-2 rounded-xl font-black text-xs transition-all">5) Pirámide Cuadr.</button>
+                <button onclick="selectSolidExercise(5)" id="solidBtn-5" class="px-3 py-2 rounded-xl font-black text-xs transition-all">6) Pirámide Hexag.</button>
+            </div>
+
+            <!-- Botón de Sonido -->
+            <button id="soundToggleBtn" onclick="toggleAudio()" class="p-2.5 sm:px-4 sm:py-2 text-white bg-slate-800 rounded-2xl hover:bg-slate-700 transition-colors border-2 border-slate-600 flex items-center gap-2 font-bold text-xs">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-cyan-400"></i>
+                <span id="soundText" class="hidden sm:inline">SONIDO ON</span>
+            </button>
+        </header>
+
+        <!-- Barra Copiloto Robot 3D + Nombre del Sólido y Polígono de la Base -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+            <!-- Copiloto Robot 3D -->
+            <div class="lg:col-span-8 bg-slate-900/80 backdrop-blur-xl border-2 border-slate-700 rounded-[2rem] p-3.5 sm:p-4 flex flex-col sm:flex-row items-center gap-4 shadow-xl">
+                <div class="relative w-28 h-28 sm:w-32 sm:h-32 shrink-0 rounded-3xl bg-black border-[3px] border-cyan-400 shadow-[0_0_25px_rgba(0,242,254,0.35)] overflow-hidden cursor-grab active:cursor-grabbing" id="robotCanvasContainer" title="Arrastra para mover el rostro 3D">
+                    <div class="absolute top-1.5 left-2 z-10 flex items-center gap-1.5 bg-black/80 px-2 py-0.5 rounded-full border border-cyan-400/60">
+                        <span id="robotStatusDot" class="w-2 h-2 rounded-full bg-[#39ff14] animate-ping"></span>
+                        <span id="robotMoodBadgeText" class="text-[9px] font-black tracking-wider text-cyan-300 uppercase">ATENTO</span>
+                    </div>
+                </div>
+
+                <div class="flex-1 flex flex-col justify-between w-full h-full gap-2.5">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="bg-cyan-950 text-cyan-300 border border-cyan-800 px-3 py-0.5 rounded-full font-black text-[11px] tracking-widest uppercase">
+                                ROBO-PROFE 3D • GUÍA DE GEOMETRÍA DEL ESPACIO
+                            </span>
+                            <span id="studentProgressBadge" class="text-xs font-black text-[#39ff14] tracking-wider uppercase">
+                                RETOS COMPLETADOS: 0 / 6
+                            </span>
+                        </div>
+                        <div id="robotMessage" class="text-xs sm:text-sm font-bold text-slate-100 leading-relaxed bg-black/55 p-3 rounded-2xl border border-white/10 min-h-[54px] flex items-center">
+                            ¡Hola amigos del Aula N.° 2! Acerquen el mouse al sólido 3D para que brillen sus Caras, Aristas y Vértices, y completen las casillas.
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="explainSolidNameRule()" class="gp-btn gp-btn-cyan px-3.5 py-1.5 text-xs gap-1.5">
+                            <i class="fa-solid fa-shapes"></i> ¿POR QUÉ SE LLAMA ASÍ?
+                        </button>
+                        <button onclick="giveNextChallengeHint()" class="gp-btn gp-btn-yellow px-3.5 py-1.5 text-xs gap-1.5">
+                            <i class="fa-solid fa-lightbulb"></i> PISTA PASO A PASO
+                        </button>
+                        <button onclick="autoCompleteCurrentSolid()" class="gp-btn gp-btn-pink px-3.5 py-1.5 text-xs gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> RESOLVER DEMO
+                        </button>
+                        <button onclick="resetStudentInputs()" class="gp-btn gp-btn-slate px-3.5 py-1.5 text-xs gap-1.5 ml-auto">
+                            <i class="fa-solid fa-rotate-left"></i> LIMPIAR CASILLAS
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Identificador del Sólido Geométrico -->
+            <div class="lg:col-span-4 bg-slate-900/80 backdrop-blur-xl border-2 border-slate-700 rounded-[2rem] p-4 flex flex-col justify-between shadow-xl">
+                <div class="flex items-center justify-between">
+                    <span id="solidCategoryBadge" class="text-[11px] font-black text-cyan-300 bg-cyan-950 border border-cyan-700 px-3 py-0.5 rounded-full uppercase tracking-wider">
+                        PRISMA RECTO
+                    </span>
+                    <span id="baseSidesBadge" class="text-xs font-black text-yellow-400 bg-yellow-950/80 border border-yellow-700 px-3 py-0.5 rounded-full">
+                        Base: 3 lados
+                    </span>
+                </div>
+
+                <div class="my-2 py-3 px-4 rounded-2xl bg-black border-2 border-cyan-400/80 text-center shadow-[0_0_20px_rgba(0,242,254,0.18)]">
+                    <div id="solidTitleDisplay" class="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
+                        PRISMA TRIANGULAR
+                    </div>
+                    <p id="solidNamingExplanation" class="text-xs font-bold text-cyan-300 mt-1">
+                        Tiene 2 bases triangulares iguales y 3 caras laterales rectangulares.
+                    </p>
+                </div>
+
+                <div class="w-full bg-black/70 rounded-xl p-2 border border-white/10 flex items-center justify-between text-xs font-bold">
+                    <span class="text-slate-400">PROGRESO DEL EJERCICIO:</span>
+                    <div class="w-36 h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                        <div id="exerciseProgressBar" class="h-full bg-gradient-to-r from-cyan-400 via-pink-500 to-green-400 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+
+            <!-- GRAN VISOR 3D INTERACTIVO (8 Columnas, Sólido 100% Cerrado y Resaltado al pasar el mouse) -->
+            <div class="lg:col-span-8 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700 rounded-[2.2rem] p-4 sm:p-5 flex flex-col justify-between shadow-2xl">
+                
+                <!-- Barra Superior de Controles del Visor 3D -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button onclick="setHighlightElement('ALL')" id="hlBtn-ALL" class="px-3 py-1.5 rounded-xl font-black text-xs bg-cyan-400 text-black transition-all">
+                            <i class="fa-solid fa-cube mr-1"></i> Todo el Sólido
+                        </button>
+                        <button onclick="setHighlightElement('CARA')" id="hlBtn-CARA" class="px-3 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-pink-400 border border-pink-500/50 hover:bg-slate-700 transition-all">
+                            <i class="fa-solid fa-clone mr-1"></i> Resaltar Caras (<span class="math-expr math-var">C</span>)
+                        </button>
+                        <button onclick="setHighlightElement('VERTICE')" id="hlBtn-VERTICE" class="px-3 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-yellow-400 border border-yellow-500/50 hover:bg-slate-700 transition-all">
+                            <i class="fa-solid fa-circle-dot mr-1"></i> Resaltar Vértices (<span class="math-expr math-var">V</span>)
+                        </button>
+                        <button onclick="setHighlightElement('ARISTA')" id="hlBtn-ARISTA" class="px-3 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-green-400 border border-green-500/50 hover:bg-slate-700 transition-all">
+                            <i class="fa-solid fa-bezier-curve mr-1"></i> Resaltar Aristas (<span class="math-expr math-var">A</span>)
+                        </button>
+                    </div>
+
+                    <!-- Botón para Activar / Desactivar Etiquetas para no estorbar la explicación -->
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleLabelsVisibility()" id="toggleLabelsBtn" class="px-3.5 py-1.5 rounded-xl font-black text-xs bg-emerald-500 text-black border-b-2 border-emerald-800 transition-all flex items-center gap-1.5 shadow-md" title="Ocultar o mostrar etiquetas al acercar el mouse">
+                            <i id="toggleLabelsIcon" class="fa-solid fa-tag"></i>
+                            <span id="toggleLabelsText">ETIQUETAS: ON</span>
+                        </button>
+                        <button onclick="toggleAutoRotate()" id="autoRotateBtn" class="px-3 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-cyan-300 border border-cyan-500/40 hover:bg-slate-700 transition-all">
+                            <i class="fa-solid fa-Sync fa-spin mr-1"></i> Giro: ON
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lienzo 3D Amplio sin planos de corte -->
+                <div id="solidViewportWrapper" class="relative w-full h-[460px] sm:h-[540px] bg-gradient-to-b from-[#060814] via-[#090d22] to-[#05060f] rounded-3xl border-2 border-slate-700 overflow-hidden shadow-inner cursor-grab active:cursor-grabbing">
+                    <canvas id="solid3DCanvas" class="w-full h-full block touch-none"></canvas>
+
+                    <!-- Indicador superior izquierdo de elemento resaltado -->
+                    <div class="absolute top-3 left-3 bg-black/80 backdrop-blur-md border border-white/15 px-3.5 py-2 rounded-2xl pointer-events-none flex items-center gap-2.5">
+                        <span id="hoveredElementDot" class="w-3.5 h-3.5 rounded-full bg-cyan-400 shadow-[0_0_10px_#00f2fe]"></span>
+                        <div>
+                            <div id="hoveredElementTitle" class="text-xs font-black text-white uppercase tracking-wider">
+                                PASA EL MOUSE SOBRE EL SÓLIDO 3D
+                            </div>
+                            <div id="hoveredElementSub" class="text-[11px] font-bold text-slate-300">
+                                Las Caras, Aristas y Vértices se iluminan al acercarte
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controles flotantes de Cámara (Zoom y Ver por debajo) -->
+                    <div class="absolute bottom-3 right-3 flex flex-wrap items-center gap-1.5 bg-black/80 backdrop-blur-md p-2 rounded-2xl border border-white/15">
+                        <button onclick="zoomCamera(-1.1)" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-black text-white font-black flex items-center justify-center transition-colors" title="Acercar">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                        </button>
+                        <button onclick="zoomCamera(1.1)" class="w-9 h-9 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-black text-white font-black flex items-center justify-center transition-colors" title="Alejar">
+                            <i class="fa-solid fa-magnifying-glass-minus"></i>
+                        </button>
+                        <button onclick="setCameraView('FRONT')" class="px-2.5 h-9 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-black text-xs font-black text-white transition-colors">
+                            Frente
+                        </button>
+                        <button onclick="setCameraView('TOP')" class="px-2.5 h-9 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-black text-xs font-black text-white transition-colors">
+                            Arriba
+                        </button>
+                        <button onclick="setCameraView('BOTTOM')" class="px-2.5 h-9 rounded-xl bg-slate-800 hover:bg-yellow-400 hover:text-black text-xs font-black text-yellow-300 border border-yellow-500/40 transition-colors">
+                            Ver por Debajo
+                        </button>
+                    </div>
+
+                    <!-- Etiqueta flotante 3D (se oculta si ETIQUETAS: OFF) -->
+                    <div id="floating3DTooltip" class="hidden absolute z-30 pointer-events-none bg-black/95 border-2 border-cyan-400 rounded-2xl px-3.5 py-2 shadow-[0_0_25px_rgba(0,242,254,0.5)] max-w-[235px] transition-opacity duration-150">
+                        <div id="tooltipBadge" class="text-[10px] font-black uppercase tracking-widest text-cyan-300 mb-0.5">ELEMENTO</div>
+                        <div id="tooltipTitle" class="text-sm font-black text-white leading-tight">Cara Lateral</div>
+                        <div id="tooltipDesc" class="text-[11px] text-slate-300 font-medium mt-0.5">Superficie plana que limita al sólido geométrico.</div>
+                    </div>
+                </div>
+
+                <!-- Barra Inferior de Leyenda Interactiva -->
+                <div class="mt-3 bg-black/65 border border-white/10 rounded-2xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-bold">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <span class="flex items-center gap-1.5 text-yellow-400">
+                            <span class="w-3 h-3 rounded-full bg-yellow-400 shadow-[0_0_8px_#facc15] inline-block"></span>
+                            <b>Vértice (<span class="math-expr math-var">V</span>):</b> Esfera amarilla
+                        </span>
+                        <span class="flex items-center gap-1.5 text-[#39ff14]">
+                            <span class="w-3 h-3 rounded-full bg-[#39ff14] shadow-[0_0_8px_#39ff14] inline-block"></span>
+                            <b>Arista (<span class="math-expr math-var">A</span>):</b> Barra neón
+                        </span>
+                        <span class="flex items-center gap-1.5 text-pink-400">
+                            <span class="w-3 h-3 rounded-full bg-pink-500 shadow-[0_0_8px_#fe0979] inline-block"></span>
+                            <b>Cara (<span class="math-expr math-var">C</span>):</b> Polígono coloreado
+                        </span>
+                    </div>
+                    <span class="text-slate-400">
+                        <i class="fa-solid fa-computer-mouse text-cyan-400 mr-1"></i> Clic izquierdo + arrastrar: Girar 360° • Rueda: Zoom
+                    </span>
+                </div>
+            </div>
+
+            <!-- PANEL DERECHO (4 Columnas): CONTEO DE ELEMENTOS Y RELACIÓN DE EULER POR EL ALUMNO -->
+            <div class="lg:col-span-4 bg-slate-900/85 backdrop-blur-xl border-2 border-slate-700 rounded-[2.2rem] p-4 sm:p-5 flex flex-col justify-between shadow-2xl">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="bg-pink-950 text-pink-300 border border-pink-700 px-3 py-0.5 rounded-full font-black text-[11px] uppercase tracking-wider">
+                            PARTE 1 • CONTEO EN 3D
+                        </span>
+                        <span class="text-xs font-bold text-slate-400">Observa y completa</span>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-black text-white uppercase tracking-wide mb-1">
+                        ELEMENTOS Y RELACIÓN DE EULER
+                    </h2>
+                    <p class="text-xs text-slate-300 font-medium mb-4">
+                        Gira el sólido en 3D, cuenta sus elementos y escribe las cantidades en cada casilla:
+                    </p>
+
+                    <!-- 3 Casillas Interactivas: Caras (C), Vértices (V), Aristas (A) -->
+                    <div class="space-y-3">
+                        <!-- Input Caras (C) -->
+                        <div class="bg-black/60 border-2 border-pink-500/40 rounded-2xl p-3 flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs font-black text-pink-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-pink-500"></span>
+                                    NÚMERO DE CARAS (<span class="math-expr math-var">C</span>)
+                                </div>
+                                <p id="hintFacesText" class="text-[11px] text-slate-400 font-medium mt-0.5">
+                                    Bases + caras laterales
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    id="inputEulerC"
+                                    placeholder="?"
+                                    oninput="validateEulerInputs()"
+                                    class="student-input math-expr font-bold w-20 py-2 px-2 rounded-xl text-center text-lg"
+                                />
+                                <span id="statusEulerC" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                    <i class="fa-solid fa-minus"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Input Vértices (V) -->
+                        <div class="bg-black/60 border-2 border-yellow-400/40 rounded-2xl p-3 flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs font-black text-yellow-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                                    NÚMERO DE VÉRTICES (<span class="math-expr math-var">V</span>)
+                                </div>
+                                <p id="hintVerticesText" class="text-[11px] text-slate-400 font-medium mt-0.5">
+                                    Esquinas donde se unen las aristas
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    id="inputEulerV"
+                                    placeholder="?"
+                                    oninput="validateEulerInputs()"
+                                    class="student-input math-expr font-bold w-20 py-2 px-2 rounded-xl text-center text-lg"
+                                />
+                                <span id="statusEulerV" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                    <i class="fa-solid fa-minus"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Input Aristas (A) -->
+                        <div class="bg-black/60 border-2 border-green-400/40 rounded-2xl p-3 flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs font-black text-[#39ff14] uppercase tracking-wider flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-[#39ff14]"></span>
+                                    NÚMERO DE ARISTAS (<span class="math-expr math-var">A</span>)
+                                </div>
+                                <p id="hintEdgesText" class="text-[11px] text-slate-400 font-medium mt-0.5">
+                                    Bordes de las bases + bordes laterales
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    id="inputEulerA"
+                                    placeholder="?"
+                                    oninput="validateEulerInputs()"
+                                    class="student-input math-expr font-bold w-20 py-2 px-2 rounded-xl text-center text-lg"
+                                />
+                                <span id="statusEulerA" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                    <i class="fa-solid fa-minus"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Comprobación en Vivo del Teorema de Euler -->
+                <div id="eulerTheoremCard" class="mt-4 bg-black/80 border-2 border-cyan-500/60 rounded-3xl p-4 text-center shadow-[0_0_25px_rgba(0,242,254,0.15)] transition-all">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <span class="text-[11px] font-black text-cyan-300 uppercase tracking-widest">
+                            TEOREMA DE EULER
+                        </span>
+                        <span id="eulerStatusBadge" class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 uppercase">
+                            PENDIENTE
+                        </span>
+                    </div>
+
+                    <div class="math-expr text-2xl sm:text-3xl font-bold text-white my-1">
+                        <span class="text-pink-400"><span class="math-var">C</span></span> + <span class="text-yellow-400"><span class="math-var">V</span></span> = <span class="text-[#39ff14]"><span class="math-var">A</span></span> + 2
+                    </div>
+
+                    <div id="eulerLiveSubstitution" class="math-expr text-lg sm:text-xl font-bold text-slate-300 my-1.5 bg-slate-900/90 py-2 px-3 rounded-xl border border-white/10">
+                        ? + ? = ? + 2
+                    </div>
+
+                    <p id="eulerFeedbackText" class="text-xs font-bold text-slate-400">
+                        Completa <span class="math-expr math-var">C</span>, <span class="math-expr math-var">V</span> y <span class="math-expr math-var">A</span> para comprobar la igualdad.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-slate-900/90 backdrop-blur-2xl border-2 border-slate-700 rounded-[2.2rem] p-5 sm:p-6 shadow-2xl">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 mb-5 border-b border-white/10">
+                <div>
+                    <span class="bg-yellow-950 text-yellow-300 border border-yellow-700 px-3 py-0.5 rounded-full font-black text-[11px] uppercase tracking-wider">
+                        PARTE 2 • CÁLCULO GEOMÉTRICO DEL ALUMNO
+                    </span>
+                    <h3 class="text-xl sm:text-2xl font-black text-white uppercase tracking-wide mt-1">
+                        CALCULA EL ÁREA LATERAL (<span class="math-expr"><span class="math-var">A</span><sub>L</sub></span>), ÁREA TOTAL (<span class="math-expr"><span class="math-var">A</span><sub>T</sub></span>) Y VOLUMEN (<span class="math-expr"><span class="math-var">V</span></span>)
+                    </h3>
+                </div>
+
+                <!-- Cinta de Datos Dados del Ejercicio -->
+                <div id="givenDataRibbon" class="flex flex-wrap items-center gap-2.5 bg-black/80 p-3 rounded-2xl border-2 border-cyan-500/40">
+                    <!-- Generado dinámicamente según el ejercicio -->
+                </div>
+            </div>
+
+            <!-- 3 Tarjetas de Cálculo para el Alumno -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+
+                <!-- 1. Área Lateral (AL) -->
+                <div class="bg-black/70 border-2 border-[#00f2fe] rounded-3xl p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(0,242,254,0.12)]">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs sm:text-sm font-black text-[#00f2fe] uppercase tracking-wider">
+                                1. ÁREA LATERAL (<span class="math-expr"><span class="math-var">A</span><sub>L</sub></span>)
+                            </span>
+                            <span id="statusCalcAL" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                <i class="fa-solid fa-minus"></i>
+                            </span>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-3 mb-3 text-center">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase mb-0.5">FÓRMULA</div>
+                            <div id="formulaALDisplay" class="math-expr text-xl sm:text-2xl font-bold text-cyan-300">
+                                <span class="math-var">A</span><sub>L</sub> = <span class="math-var">P</span><sub>base</sub> · <span class="math-var">h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1.5">
+                            Ingresa el Área Lateral (<span class="math-expr">cm<sup>2</sup></span>):
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="number"
+                                id="inputCalcAL"
+                                placeholder="Escribe AL"
+                                oninput="validateCalculations()"
+                                class="student-input math-expr font-bold w-full py-2.5 px-3 rounded-xl text-center text-xl"
+                            />
+                            <span class="math-expr text-lg font-bold text-cyan-300 shrink-0">cm<sup>2</sup></span>
+                        </div>
+                        <div id="stepBoxAL" class="mt-2.5 text-xs text-slate-300 bg-slate-900/70 p-2.5 rounded-xl border border-white/5 min-h-[42px] flex items-center">
+                            Multiplica los datos en la fórmula para hallar <span class="math-expr ml-1"><span class="math-var">A</span><sub>L</sub></span>.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Área Total (AT) -->
+                <div class="bg-black/70 border-2 border-[#fe0979] rounded-3xl p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(254,9,121,0.12)]">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs sm:text-sm font-black text-[#fe0979] uppercase tracking-wider">
+                                2. ÁREA TOTAL (<span class="math-expr"><span class="math-var">A</span><sub>T</sub></span>)
+                            </span>
+                            <span id="statusCalcAT" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                <i class="fa-solid fa-minus"></i>
+                            </span>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-3 mb-3 text-center">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase mb-0.5">FÓRMULA</div>
+                            <div id="formulaATDisplay" class="math-expr text-xl sm:text-2xl font-bold text-pink-400">
+                                <span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + 2 · <span class="math-var">A</span><sub>base</sub>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1.5">
+                            Ingresa el Área Total (<span class="math-expr">cm<sup>2</sup></span>):
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="number"
+                                id="inputCalcAT"
+                                placeholder="Escribe AT"
+                                oninput="validateCalculations()"
+                                class="student-input math-expr font-bold w-full py-2.5 px-3 rounded-xl text-center text-xl"
+                            />
+                            <span class="math-expr text-lg font-bold text-pink-400 shrink-0">cm<sup>2</sup></span>
+                        </div>
+                        <div id="stepBoxAT" class="mt-2.5 text-xs text-slate-300 bg-slate-900/70 p-2.5 rounded-xl border border-white/5 min-h-[42px] flex items-center">
+                            Suma el área lateral más el área de la(s) base(s).
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Volumen (V) -->
+                <div class="bg-black/70 border-2 border-[#39ff14] rounded-3xl p-5 flex flex-col justify-between shadow-[0_0_25px_rgba(57,255,20,0.12)]">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs sm:text-sm font-black text-[#39ff14] uppercase tracking-wider">
+                                3. VOLUMEN (<span class="math-expr"><span class="math-var">V</span></span>)
+                            </span>
+                            <span id="statusCalcVol" class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs">
+                                <i class="fa-solid fa-minus"></i>
+                            </span>
+                        </div>
+
+                        <div class="bg-slate-900/90 border border-white/10 rounded-2xl p-3 mb-3 text-center">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase mb-0.5">FÓRMULA</div>
+                            <div id="formulaVolDisplay" class="math-expr text-xl sm:text-2xl font-bold text-[#39ff14]">
+                                <span class="math-var">V</span> = <span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1.5">
+                            Ingresa el Volumen (<span class="math-expr">cm<sup>3</sup></span>):
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <input
+                                type="number"
+                                id="inputCalcVol"
+                                placeholder="Escribe V"
+                                oninput="validateCalculations()"
+                                class="student-input math-expr font-bold w-full py-2.5 px-3 rounded-xl text-center text-xl"
+                            />
+                            <span class="math-expr text-lg font-bold text-[#39ff14] shrink-0">cm<sup>3</sup></span>
+                        </div>
+                        <div id="stepBoxVol" class="mt-2.5 text-xs text-slate-300 bg-slate-900/70 p-2.5 rounded-xl border border-white/5 min-h-[42px] flex items-center">
+                            Espacio que ocupa el sólido en <span class="math-expr ml-1">cm<sup>3</sup></span>.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const SOLIDS_DATA = [
+            {
+                id: 1,
+                type: 'PRISMA',
+                name: 'Prisma Triangular',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 1 DE 6',
+                categoryBadge: 'PRISMA RECTO (2 BASES IGUALES)',
+                sides: 3,
+                basePolygonName: 'Triángulo (3 lados)',
+                namingRule: 'Se llama Prisma Triangular porque sus 2 bases son triángulos (3 lados) y tiene 3 caras laterales rectangulares.',
+                C: 5, V: 6, A: 9,
+                hintC: '2 bases triangulares + 3 caras laterales = 5 caras',
+                hintV: '3 vértices arriba + 3 vértices abajo = 6 vértices',
+                hintA: '3 aristas arriba + 3 abajo + 3 laterales = 9 aristas',
+                radius3D: 1.55,
+                height3D: 2.35,
+                givenData: [
+                    { label: 'Lado base (l)', val: '4 cm' },
+                    { label: 'Perímetro base (P_base)', val: '12 cm' },
+                    { label: 'Área base (A_base)', val: '7 cm²' },
+                    { label: 'Altura prisma (h)', val: '10 cm' }
+                ],
+                AL: 120,
+                AT: 134,
+                Vol: 70,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = <span class="math-var">P</span><sub>base</sub> · <span class="math-var">h</span>`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + 2 · <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = <span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>`,
+                stepAL: `A<sub>L</sub> = 12 · 10 = <b class="text-[#39ff14]">120 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 120 + 2(7) = 120 + 14 = <b class="text-[#39ff14]">134 cm²</b>`,
+                stepVol: `V = 7 · 10 = <b class="text-[#39ff14]">70 cm³</b>`
+            },
+            {
+                id: 2,
+                type: 'PRISMA',
+                name: 'Prisma Cuadrangular',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 2 DE 6',
+                categoryBadge: 'PRISMA RECTO (2 BASES IGUALES)',
+                sides: 4,
+                basePolygonName: 'Cuadrado (4 lados)',
+                namingRule: 'Se llama Prisma Cuadrangular porque sus 2 bases tienen 4 lados (cuadrados) y posee 4 caras laterales rectangulares.',
+                C: 6, V: 8, A: 12,
+                hintC: '2 bases cuadradas + 4 caras laterales = 6 caras',
+                hintV: '4 vértices arriba + 4 vértices abajo = 8 vértices',
+                hintA: '4 aristas arriba + 4 abajo + 4 laterales = 12 aristas',
+                radius3D: 1.6,
+                height3D: 2.35,
+                givenData: [
+                    { label: 'Lado base (l)', val: '5 cm' },
+                    { label: 'Perímetro base (P_base)', val: '20 cm' },
+                    { label: 'Área base (A_base)', val: '25 cm²' },
+                    { label: 'Altura prisma (h)', val: '8 cm' }
+                ],
+                AL: 160,
+                AT: 210,
+                Vol: 200,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = <span class="math-var">P</span><sub>base</sub> · <span class="math-var">h</span>`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + 2 · <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = <span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>`,
+                stepAL: `A<sub>L</sub> = 20 · 8 = <b class="text-[#39ff14]">160 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 160 + 2(25) = 160 + 50 = <b class="text-[#39ff14]">210 cm²</b>`,
+                stepVol: `V = 25 · 8 = <b class="text-[#39ff14]">200 cm³</b>`
+            },
+            {
+                id: 3,
+                type: 'PRISMA',
+                name: 'Prisma Hexagonal',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 3 DE 6',
+                categoryBadge: 'PRISMA RECTO (2 BASES IGUALES)',
+                sides: 6,
+                basePolygonName: 'Hexágono (6 lados)',
+                namingRule: 'Se llama Prisma Hexagonal porque sus 2 bases son hexágonos (6 lados) y tiene 6 caras laterales rectangulares.',
+                C: 8, V: 12, A: 18,
+                hintC: '2 bases hexagonales + 6 caras laterales = 8 caras',
+                hintV: '6 vértices arriba + 6 vértices abajo = 12 vértices',
+                hintA: '6 aristas arriba + 6 abajo + 6 laterales = 18 aristas',
+                radius3D: 1.65,
+                height3D: 2.35,
+                givenData: [
+                    { label: 'Lado base (l)', val: '3 cm' },
+                    { label: 'Perímetro base (P_base)', val: '18 cm' },
+                    { label: 'Área base (A_base)', val: '24 cm²' },
+                    { label: 'Altura prisma (h)', val: '10 cm' }
+                ],
+                AL: 180,
+                AT: 228,
+                Vol: 240,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = <span class="math-var">P</span><sub>base</sub> · <span class="math-var">h</span>`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + 2 · <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = <span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>`,
+                stepAL: `A<sub>L</sub> = 18 · 10 = <b class="text-[#39ff14]">180 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 180 + 2(24) = 180 + 48 = <b class="text-[#39ff14]">228 cm²</b>`,
+                stepVol: `V = 24 · 10 = <b class="text-[#39ff14]">240 cm³</b>`
+            },
+            {
+                id: 4,
+                type: 'PIRAMIDE',
+                name: 'Pirámide Triangular',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 4 DE 6',
+                categoryBadge: 'PIRÁMIDE RECTA (1 BASE + CÚSPIDE)',
+                sides: 3,
+                basePolygonName: 'Triángulo (3 lados)',
+                namingRule: 'Se llama Pirámide Triangular porque su única base es un triángulo (3 lados) y sus 3 caras laterales triangulares se unen en la cúspide.',
+                C: 4, V: 4, A: 6,
+                hintC: '1 base triangular + 3 caras laterales = 4 caras',
+                hintV: '3 vértices en la base + 1 cúspide = 4 vértices',
+                hintA: '3 aristas en la base + 3 laterales = 6 aristas',
+                radius3D: 1.75,
+                height3D: 2.5,
+                givenData: [
+                    { label: 'Perímetro base (P_base)', val: '12 cm' },
+                    { label: 'Apotema pirámide (A_p)', val: '8 cm' },
+                    { label: 'Área base (A_base)', val: '9 cm²' },
+                    { label: 'Altura pirámide (h)', val: '7 cm' }
+                ],
+                AL: 48,
+                AT: 57,
+                Vol: 21,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = (<span class="math-var">P</span><sub>base</sub> · <span class="math-var">A</span><sub>p</sub>) / 2`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = (<span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>) / 3`,
+                stepAL: `A<sub>L</sub> = (12 · 8) / 2 = 96 / 2 = <b class="text-[#39ff14]">48 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 48 + 9 = <b class="text-[#39ff14]">57 cm²</b>`,
+                stepVol: `V = (9 · 7) / 3 = 63 / 3 = <b class="text-[#39ff14]">21 cm³</b>`
+            },
+            {
+                id: 5,
+                type: 'PIRAMIDE',
+                name: 'Pirámide Cuadrangular',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 5 DE 6',
+                categoryBadge: 'PIRÁMIDE RECTA (1 BASE + CÚSPIDE)',
+                sides: 4,
+                basePolygonName: 'Cuadrado (4 lados)',
+                namingRule: 'Se llama Pirámide Cuadrangular porque su base es un cuadrado (4 lados) y tiene 4 caras laterales triangulares que se unen en la cúspide.',
+                C: 5, V: 5, A: 8,
+                hintC: '1 base cuadrada + 4 caras laterales = 5 caras',
+                hintV: '4 vértices en la base + 1 cúspide = 5 vértices',
+                hintA: '4 aristas en la base + 4 laterales = 8 aristas',
+                radius3D: 1.75,
+                height3D: 2.5,
+                givenData: [
+                    { label: 'Lado base (l)', val: '6 cm' },
+                    { label: 'Perímetro base (P_base)', val: '24 cm' },
+                    { label: 'Apotema pirámide (A_p)', val: '5 cm' },
+                    { label: 'Área base (A_base)', val: '36 cm²' },
+                    { label: 'Altura pirámide (h)', val: '4 cm' }
+                ],
+                AL: 60,
+                AT: 96,
+                Vol: 48,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = (<span class="math-var">P</span><sub>base</sub> · <span class="math-var">A</span><sub>p</sub>) / 2`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = (<span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>) / 3`,
+                stepAL: `A<sub>L</sub> = (24 · 5) / 2 = 120 / 2 = <b class="text-[#39ff14]">60 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 60 + 36 = <b class="text-[#39ff14]">96 cm²</b>`,
+                stepVol: `V = (36 · 4) / 3 = 144 / 3 = <b class="text-[#39ff14]">48 cm³</b>`
+            },
+            {
+                id: 6,
+                type: 'PIRAMIDE',
+                name: 'Pirámide Hexagonal',
+                subtitle: 'AULA N.° 2 NIVEL PRIMARIA • EJERCICIO 6 DE 6',
+                categoryBadge: 'PIRÁMIDE RECTA (1 BASE + CÚSPIDE)',
+                sides: 6,
+                basePolygonName: 'Hexágono (6 lados)',
+                namingRule: 'Se llama Pirámide Hexagonal porque su base es un hexágono (6 lados) y tiene 6 caras laterales triangulares que convergen en la cúspide.',
+                C: 7, V: 7, A: 12,
+                hintC: '1 base hexagonal + 6 caras laterales = 7 caras',
+                hintV: '6 vértices en la base + 1 cúspide = 7 vértices',
+                hintA: '6 aristas en la base + 6 laterales = 12 aristas',
+                radius3D: 1.75,
+                height3D: 2.5,
+                givenData: [
+                    { label: 'Perímetro base (P_base)', val: '24 cm' },
+                    { label: 'Apotema pirámide (A_p)', val: '10 cm' },
+                    { label: 'Área base (A_base)', val: '42 cm²' },
+                    { label: 'Altura pirámide (h)', val: '9 cm' }
+                ],
+                AL: 120,
+                AT: 162,
+                Vol: 126,
+                formulaAL: `<span class="math-var">A</span><sub>L</sub> = (<span class="math-var">P</span><sub>base</sub> · <span class="math-var">A</span><sub>p</sub>) / 2`,
+                formulaAT: `<span class="math-var">A</span><sub>T</sub> = <span class="math-var">A</span><sub>L</sub> + <span class="math-var">A</span><sub>base</sub>`,
+                formulaVol: `<span class="math-var">V</span> = (<span class="math-var">A</span><sub>base</sub> · <span class="math-var">h</span>) / 3`,
+                stepAL: `A<sub>L</sub> = (24 · 10) / 2 = 240 / 2 = <b class="text-[#39ff14]">120 cm²</b>`,
+                stepAT: `A<sub>T</sub> = 120 + 42 = <b class="text-[#39ff14]">162 cm²</b>`,
+                stepVol: `V = (42 · 9) / 3 = 378 / 3 = <b class="text-[#39ff14]">126 cm³</b>`
+            }
+        ];
+
+        let currentSolidIdx = 0;
+        let labelsEnabled = true;
+        let autoRotateSolid = true;
+        let currentHighlightCategory = 'ALL'; // 'ALL', 'CARA', 'VERTICE', 'ARISTA'
+        let demoTimers = [];
+
+        let completedFlags = {
+            eulerC: false,
+            eulerV: false,
+            eulerA: false,
+            calcAL: false,
+            calcAT: false,
+            calcVol: false
+        };
+
+        let audioEnabled = true;
+        let synth = null;
+        let polySynth = null;
+
+        async function ensureAudioReady() {
+            if (!audioEnabled) return false;
+            try {
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
+                }
+                if (!synth) {
+                    synth = new Tone.Synth({
+                        oscillator: { type: "triangle" },
+                        envelope: { attack: 0.01, decay: 0.12, sustain: 0.05, release: 0.2 }
+                    }).toDestination();
+                }
+                if (!polySynth) {
+                    polySynth = new Tone.PolySynth(Tone.Synth, {
+                        oscillator: { type: "sawtooth" },
+                        envelope: { attack: 0.02, decay: 0.2, sustain: 0.15, release: 0.4 }
+                    }).toDestination();
+                    polySynth.volume.value = -8;
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        async function playSound(type, stepIndex = 0) {
+            if (!audioEnabled) return;
+            const ready = await ensureAudioReady();
+            if (!ready) return;
+
+            const now = Tone.now();
+            const scaleNotes = ["C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5"];
+            try {
+                if (type === 'valid') {
+                    synth.triggerAttackRelease(scaleNotes[stepIndex % scaleNotes.length], "16n", now);
+                    setRobotMood('happy');
+                } else if (type === 'hover') {
+                    synth.triggerAttackRelease("E5", "64n", now);
+                } else if (type === 'error') {
+                    synth.triggerAttackRelease("F#2", "8n", now);
+                    setRobotMood('alert');
+                } else if (type === 'switch') {
+                    synth.triggerAttackRelease("A4", "32n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.06);
+                } else if (type === 'celebrate') {
+                    polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now);
+                    polySynth.triggerAttackRelease(["F4", "A4", "C5", "F5"], "8n", now + 0.16);
+                    polySynth.triggerAttackRelease(["G4", "B4", "D5", "G5"], "4n", now + 0.32);
+                    setRobotMood('celebrate');
+                }
+            } catch (e) {}
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const icon = document.getElementById('soundIcon');
+            const text = document.getElementById('soundText');
+            if (audioEnabled) {
+                icon.className = "fa-solid fa-volume-high text-cyan-400";
+                if (text) text.textContent = "SONIDO ON";
+                playSound('switch');
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-pink-500";
+                if (text) text.textContent = "SILENCIO";
+            }
+        }
+
+        let robotScene, robotCamera, robotRenderer, headGroup, leftEye, rightEye, leftBrow, rightBrow, mouthSegments = [], antennaBall;
+        let robotMood = 'idle';
+        let moodTimer = 0;
+        let isDraggingRobot = false;
+        let prevRobotX = 0, prevRobotY = 0;
+
+        function initRobot3D() {
+            const container = document.getElementById('robotCanvasContainer');
+            const width = container.clientWidth || 128;
+            const height = container.clientHeight || 128;
+
+            robotScene = new THREE.Scene();
+            robotCamera = new THREE.PerspectiveCamera(36, width / height, 0.1, 100);
+            robotCamera.position.set(0, 0.05, 3.35);
+
+            robotRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            robotRenderer.setSize(width, height);
+            robotRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(robotRenderer.domElement);
+
+            robotScene.add(new THREE.AmbientLight(0xffffff, 0.95));
+            const cyanLight = new THREE.PointLight(0x00f2fe, 2.5, 12);
+            cyanLight.position.set(2.5, 2.5, 3.5);
+            robotScene.add(cyanLight);
+
+            const pinkLight = new THREE.PointLight(0xfe0979, 2.2, 12);
+            pinkLight.position.set(-2.5, -1.8, 3);
+            robotScene.add(pinkLight);
+
+            headGroup = new THREE.Group();
+            robotScene.add(headGroup);
+
+            const helmetMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.75, roughness: 0.25 });
+            const trimCyanMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, emissive: 0x00f2fe, emissiveIntensity: 0.75 });
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xfacc15, emissiveIntensity: 0.85 });
+            const greenMat = new THREE.MeshStandardMaterial({ color: 0x39ff14, emissive: 0x39ff14, emissiveIntensity: 0.9 });
+            const pinkMat = new THREE.MeshStandardMaterial({ color: 0xfe0979, emissive: 0xfe0979, emissiveIntensity: 0.9 });
+
+            headGroup.add(new THREE.Mesh(new THREE.BoxGeometry(1.75, 1.42, 1.25), helmetMat));
+
+            const crestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.22, 1.32), trimCyanMat);
+            crestMesh.position.set(0, 0.74, 0);
+            headGroup.add(crestMesh);
+
+            const screenMesh = new THREE.Mesh(new THREE.BoxGeometry(1.52, 1.06, 0.12), new THREE.MeshBasicMaterial({ color: 0x05050d }));
+            screenMesh.position.set(0, -0.02, 0.61);
+            headGroup.add(screenMesh);
+
+            const eyeGeo = new THREE.SphereGeometry(0.19, 24, 24);
+            leftEye = new THREE.Mesh(eyeGeo, greenMat.clone());
+            leftEye.scale.set(1.1, 1.15, 0.45);
+            leftEye.position.set(-0.38, 0.12, 0.66);
+            headGroup.add(leftEye);
+
+            rightEye = new THREE.Mesh(eyeGeo, greenMat.clone());
+            rightEye.scale.set(1.1, 1.15, 0.45);
+            rightEye.position.set(0.38, 0.12, 0.66);
+            headGroup.add(rightEye);
+
+            const browGeo = new THREE.BoxGeometry(0.36, 0.065, 0.08);
+            leftBrow = new THREE.Mesh(browGeo, goldMat.clone());
+            leftBrow.position.set(-0.38, 0.36, 0.69);
+            headGroup.add(leftBrow);
+
+            rightBrow = new THREE.Mesh(browGeo, goldMat.clone());
+            rightBrow.position.set(0.38, 0.36, 0.69);
+            headGroup.add(rightBrow);
+
+            mouthSegments = [];
+            const segGeo = new THREE.BoxGeometry(0.13, 0.07, 0.08);
+            [-0.32, -0.16, 0, 0.16, 0.32].forEach((xPos, i) => {
+                const seg = new THREE.Mesh(segGeo, trimCyanMat.clone());
+                const curveY = (i === 0 || i === 4) ? -0.24 : (i === 1 || i === 3) ? -0.30 : -0.32;
+                seg.position.set(xPos, curveY, 0.68);
+                headGroup.add(seg);
+                mouthSegments.push(seg);
+            });
+
+            const earGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.18, 20);
+            earGeo.rotateZ(Math.PI / 2);
+            const leftEar = new THREE.Mesh(earGeo, trimCyanMat);
+            leftEar.position.set(-0.95, 0, 0);
+            headGroup.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeo, trimCyanMat);
+            rightEar.position.set(0.95, 0, 0);
+            headGroup.add(rightEar);
+
+            const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.38), goldMat);
+            rod.position.set(0, 0.92, 0);
+            headGroup.add(rod);
+
+            antennaBall = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), pinkMat.clone());
+            antennaBall.position.set(0, 1.14, 0);
+            headGroup.add(antennaBall);
+
+            container.addEventListener('mousedown', (e) => {
+                isDraggingRobot = true;
+                prevRobotX = e.clientX;
+                prevRobotY = e.clientY;
+            });
+            window.addEventListener('mouseup', () => isDraggingRobot = false);
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingRobot) return;
+                headGroup.rotation.y = Math.max(-0.65, Math.min(0.65, headGroup.rotation.y + (e.clientX - prevRobotX) * 0.015));
+                headGroup.rotation.x = Math.max(-0.35, Math.min(0.35, headGroup.rotation.x + (e.clientY - prevRobotY) * 0.015));
+                prevRobotX = e.clientX;
+                prevRobotY = e.clientY;
+            });
+        }
+
+        function setRobotMood(mood) {
+            robotMood = mood;
+            moodTimer = 110;
+            if (!leftEye || !rightEye || !antennaBall) return;
+
+            const badge = document.getElementById('robotMoodBadgeText');
+            const dot = document.getElementById('robotStatusDot');
+            const applyColor = (mesh, hex) => {
+                mesh.material.color.setHex(hex);
+                if (mesh.material.emissive) mesh.material.emissive.setHex(hex);
+            };
+
+            if (mood === 'happy') {
+                if (badge) badge.textContent = "¡MUY BIEN!";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-[#39ff14] animate-ping";
+                applyColor(leftEye, 0x39ff14);
+                applyColor(rightEye, 0x39ff14);
+                applyColor(antennaBall, 0x00f2fe);
+                leftBrow.rotation.z = 0.15;
+                rightBrow.rotation.z = -0.15;
+                [-0.21, -0.30, -0.33, -0.30, -0.21].forEach((y, i) => {
+                    mouthSegments[i].position.y = y;
+                    applyColor(mouthSegments[i], 0x39ff14);
+                });
+            } else if (mood === 'thinking') {
+                if (badge) badge.textContent = "PISTA IA";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-[#facc15] animate-ping";
+                applyColor(leftEye, 0xfacc15);
+                applyColor(rightEye, 0x00f2fe);
+                applyColor(antennaBall, 0xfacc15);
+            } else if (mood === 'alert') {
+                if (badge) badge.textContent = "REVISA";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-[#fe0979] animate-ping";
+                applyColor(leftEye, 0xfe0979);
+                applyColor(rightEye, 0xfe0979);
+                applyColor(antennaBall, 0xfe0979);
+                leftBrow.rotation.z = -0.25;
+                rightBrow.rotation.z = 0.25;
+            } else if (mood === 'celebrate') {
+                if (badge) badge.textContent = "¡EXCELENTE!";
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-[#facc15] animate-ping";
+                applyColor(leftEye, 0xfacc15);
+                applyColor(rightEye, 0xfacc15);
+                applyColor(antennaBall, 0x39ff14);
+            }
+        }
+
+        function updateRobotSpeech(html) {
+            document.getElementById('robotMessage').innerHTML = html;
+        }
+
+        let solidScene, solidCamera, solidRenderer, solidRootGroup;
+        let interactiveMeshes = [];
+        let faceMeshList = [];
+        let edgeMeshList = [];
+        let vertexMeshList = [];
+        let hoveredObject = null;
+
+        let isDraggingSolid = false;
+        let prevSolidMouseX = 0, prevSolidMouseY = 0;
+        let targetRotX = 0.38;
+        let targetRotY = -0.62;
+        let cameraDistance = 6.2;
+
+        const raycaster = new THREE.Raycaster();
+        const mouseNDC = new THREE.Vector2();
+
+        function initSolid3DViewport() {
+            const wrapper = document.getElementById('solidViewportWrapper');
+            const canvas = document.getElementById('solid3DCanvas');
+            const w = wrapper.clientWidth || 720;
+            const h = wrapper.clientHeight || 520;
+
+            solidScene = new THREE.Scene();
+            solidCamera = new THREE.PerspectiveCamera(40, w / h, 0.05, 100);
+            solidCamera.position.set(0, 0, cameraDistance);
+
+            solidRenderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            solidRenderer.setSize(w, h);
+            solidRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.95);
+            solidScene.add(ambient);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.95);
+            dirLight1.position.set(6, 9, 8);
+            solidScene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x00f2fe, 0.65);
+            dirLight2.position.set(-7, -6, 5);
+            solidScene.add(dirLight2);
+
+            solidRootGroup = new THREE.Group();
+            solidScene.add(solidRootGroup);
+
+            // Eventos de rotación 360° con clic izquierdo y zoom con rueda
+            canvas.addEventListener('mousedown', (e) => {
+                if (e.button !== 0) return;
+                isDraggingSolid = true;
+                prevSolidMouseX = e.clientX;
+                prevSolidMouseY = e.clientY;
+            });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingSolid = false;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingSolid) {
+                    const dx = e.clientX - prevSolidMouseX;
+                    const dy = e.clientY - prevSolidMouseY;
+                    targetRotY += dx * 0.011;
+                    targetRotX = Math.max(-Math.PI / 1.9, Math.min(Math.PI / 1.9, targetRotX + dy * 0.011));
+                    prevSolidMouseX = e.clientX;
+                    prevSolidMouseY = e.clientY;
+                    hideFloatingTooltip();
+                    return;
+                }
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDraggingSolid) {
+                    handlePointerRaycast(e.clientX, e.clientY);
+                }
+            });
+
+            canvas.addEventListener('mouseleave', () => {
+                clearHoveredElement();
+                hideFloatingTooltip();
+            });
+
+            canvas.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                zoomCamera(e.deltaY * 0.004);
+            }, { passive: false });
+
+            // Soporte táctil para celulares y tablets
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    isDraggingSolid = true;
+                    prevSolidMouseX = e.touches[0].clientX;
+                    prevSolidMouseY = e.touches[0].clientY;
+                    handlePointerRaycast(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (isDraggingSolid && e.touches.length === 1) {
+                    const dx = e.touches[0].clientX - prevSolidMouseX;
+                    const dy = e.touches[0].clientY - prevSolidMouseY;
+                    targetRotY += dx * 0.012;
+                    targetRotX = Math.max(-Math.PI / 1.9, Math.min(Math.PI / 1.9, targetRotX + dy * 0.012));
+                    prevSolidMouseX = e.touches[0].clientX;
+                    prevSolidMouseY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            canvas.addEventListener('touchend', () => {
+                isDraggingSolid = false;
+            });
+        }
+
+        // Crea una cara poligonal 3D cerrada a partir de una lista ordenada de puntos 3D
+        function createPolygonFaceMesh(points3D, colorHex, elemTitle, elemDesc) {
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+
+            // Triangulación en abanico desde el primer punto (funciona para triángulos, cuadrados y hexágonos convexos)
+            for (let i = 1; i < points3D.length - 1; i++) {
+                const p0 = points3D[0];
+                const p1 = points3D[i];
+                const p2 = points3D[i + 1];
+                positions.push(p0.x, p0.y, p0.z, p1.x, p1.y, p1.z, p2.x, p2.y, p2.z);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.computeVertexNormals();
+
+            const material = new THREE.MeshPhysicalMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 0.14,
+                roughness: 0.25,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.78,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.userData = {
+                elemCategory: 'CARA',
+                elemTitle,
+                elemDesc,
+                baseColor: colorHex,
+                baseOpacity: 0.78,
+                baseEmissive: 0.14
+            };
+            return mesh;
+        }
+
+        // Crea una arista cilíndrica 3D exacta entre dos vértices
+        function createCylinderEdgeMesh(vStart, vEnd, colorHex, elemTitle, elemDesc) {
+            const dir = new THREE.Vector3().subVectors(vEnd, vStart);
+            const len = dir.length();
+            const mid = new THREE.Vector3().addVectors(vStart, vEnd).multiplyScalar(0.5);
+
+            const geom = new THREE.CylinderGeometry(0.055, 0.055, len, 14);
+            const mat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 0.65,
+                roughness: 0.2,
+                metalness: 0.3
+            });
+
+            const edgeMesh = new THREE.Mesh(geom, mat);
+            edgeMesh.position.copy(mid);
+            edgeMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+
+            edgeMesh.userData = {
+                elemCategory: 'ARISTA',
+                elemTitle,
+                elemDesc,
+                baseColor: colorHex,
+                baseEmissive: 0.65
+            };
+            return edgeMesh;
+        }
+
+        // Crea una esfera brillante en cada vértice 3D
+        function createSphereVertexMesh(pos, colorHex, elemTitle, elemDesc) {
+            const geom = new THREE.SphereGeometry(0.135, 24, 24);
+            const mat = new THREE.MeshStandardMaterial({
+                color: colorHex,
+                emissive: colorHex,
+                emissiveIntensity: 0.8,
+                roughness: 0.15,
+                metalness: 0.2
+            });
+
+            const sphere = new THREE.Mesh(geom, mat);
+            sphere.position.copy(pos);
+            sphere.userData = {
+                elemCategory: 'VERTICE',
+                elemTitle,
+                elemDesc,
+                baseColor: colorHex,
+                baseEmissive: 0.8
+            };
+            return sphere;
+        }
+
+        function buildCompleteSolid3D(solid) {
+            if (!solidRootGroup) return;
+
+            while (solidRootGroup.children.length > 0) {
+                solidRootGroup.remove(solidRootGroup.children[0]);
+            }
+            interactiveMeshes = [];
+            faceMeshList = [];
+            edgeMeshList = [];
+            vertexMeshList = [];
+            hoveredObject = null;
+
+            const n = solid.sides;
+            const R = solid.radius3D;
+            const H = solid.height3D;
+            const halfH = H / 2;
+
+            // Colores vivos por cara lateral
+            const lateralColors = [0x00f2fe, 0xfe0979, 0x39ff14, 0xff5e00, 0xbf00ff, 0xfacc15];
+            const baseFaceColor = 0x38bdf8;
+            const edgeNeonColor = 0x39ff14;
+            const vertexNeonColor = 0xfacc15;
+
+            if (solid.type === 'PRISMA') {
+                const bottomVerts = [];
+                const topVerts = [];
+
+                for (let i = 0; i < n; i++) {
+                    const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
+                    const x = R * Math.cos(angle);
+                    const z = R * Math.sin(angle);
+                    bottomVerts.push(new THREE.Vector3(x, -halfH, z));
+                    topVerts.push(new THREE.Vector3(x, halfH, z));
+                }
+
+                // 1. Cara Base Inferior y Cara Base Superior completas
+                const bottomFace = createPolygonFaceMesh(
+                    bottomVerts,
+                    baseFaceColor,
+                    `Cara Base Inferior (${solid.basePolygonName})`,
+                    `Una de las 2 bases paralelas e iguales del ${solid.name}.`
+                );
+                const topFace = createPolygonFaceMesh(
+                    topVerts,
+                    baseFaceColor,
+                    `Cara Base Superior (${solid.basePolygonName})`,
+                    `El nombre del prisma depende de los ${n} lados de esta base.`
+                );
+                solidRootGroup.add(bottomFace, topFace);
+                faceMeshList.push(bottomFace, topFace);
+                interactiveMeshes.push(bottomFace, topFace);
+
+                // 2. Caras Laterales Rectangulares completas
+                for (let i = 0; i < n; i++) {
+                    const next = (i + 1) % n;
+                    const quadPoints = [
+                        bottomVerts[i],
+                        bottomVerts[next],
+                        topVerts[next],
+                        topVerts[i]
+                    ];
+                    const latFace = createPolygonFaceMesh(
+                        quadPoints,
+                        lateralColors[i % lateralColors.length],
+                        `Cara Lateral ${i + 1} de ${n} (Rectángulo)`,
+                        `En todo prisma recto, las caras laterales son rectángulos.`
+                    );
+                    solidRootGroup.add(latFace);
+                    faceMeshList.push(latFace);
+                    interactiveMeshes.push(latFace);
+                }
+
+                // 3. Aristas Basales y Laterales
+                for (let i = 0; i < n; i++) {
+                    const next = (i + 1) % n;
+                    const eBottom = createCylinderEdgeMesh(
+                        bottomVerts[i],
+                        bottomVerts[next],
+                        0x00f2fe,
+                        `Arista Basal Inferior (${i + 1})`,
+                        `Segmento que forma el borde de la base inferior.`
+                    );
+                    const eTop = createCylinderEdgeMesh(
+                        topVerts[i],
+                        topVerts[next],
+                        0x00f2fe,
+                        `Arista Basal Superior (${i + 1})`,
+                        `Segmento que forma el borde de la base superior.`
+                    );
+                    const eLat = createCylinderEdgeMesh(
+                        bottomVerts[i],
+                        topVerts[i],
+                        edgeNeonColor,
+                        `Arista Lateral (${i + 1})`,
+                        `Une las dos bases y mide igual a la altura del prisma.`
+                    );
+                    solidRootGroup.add(eBottom, eTop, eLat);
+                    edgeMeshList.push(eBottom, eTop, eLat);
+                    interactiveMeshes.push(eBottom, eTop, eLat);
+                }
+
+                // 4. Vértices Superiores e Inferiores
+                for (let i = 0; i < n; i++) {
+                    const vBot = createSphereVertexMesh(
+                        bottomVerts[i],
+                        vertexNeonColor,
+                        `Vértice Inferior ${i + 1}`,
+                        `Punto o esquina donde se unen 3 aristas del prisma.`
+                    );
+                    const vTop = createSphereVertexMesh(
+                        topVerts[i],
+                        vertexNeonColor,
+                        `Vértice Superior ${i + 1}`,
+                        `El ${solid.name} tiene en total ${solid.V} vértices.`
+                    );
+                    solidRootGroup.add(vBot, vTop);
+                    vertexMeshList.push(vBot, vTop);
+                    interactiveMeshes.push(vBot, vTop);
+                }
+
+            } else {
+                // PIRÁMIDE RECTA COMPLETA
+                const baseVerts = [];
+                for (let i = 0; i < n; i++) {
+                    const angle = (i * 2 * Math.PI) / n - Math.PI / 2;
+                    const x = R * Math.cos(angle);
+                    const z = R * Math.sin(angle);
+                    baseVerts.push(new THREE.Vector3(x, -halfH, z));
+                }
+                const apexVert = new THREE.Vector3(0, halfH, 0);
+
+                // 1. Única Cara Base Poligonal
+                const baseFace = createPolygonFaceMesh(
+                    baseVerts,
+                    baseFaceColor,
+                    `Cara Base (${solid.basePolygonName})`,
+                    `Única base de la pirámide. Sus ${n} lados le dan el nombre a la pirámide.`
+                );
+                solidRootGroup.add(baseFace);
+                faceMeshList.push(baseFace);
+                interactiveMeshes.push(baseFace);
+
+                // 2. Caras Laterales Triangulares que se unen en la Cúspide
+                for (let i = 0; i < n; i++) {
+                    const next = (i + 1) % n;
+                    const triPoints = [baseVerts[i], baseVerts[next], apexVert];
+                    const latFace = createPolygonFaceMesh(
+                        triPoints,
+                        lateralColors[i % lateralColors.length],
+                        `Cara Lateral Triangular ${i + 1} de ${n}`,
+                        `En toda pirámide, las caras laterales son triángulos que se unen en la cúspide.`
+                    );
+                    solidRootGroup.add(latFace);
+                    faceMeshList.push(latFace);
+                    interactiveMeshes.push(latFace);
+                }
+
+                // 3. Aristas de la Base y Aristas Laterales
+                for (let i = 0; i < n; i++) {
+                    const next = (i + 1) % n;
+                    const eBase = createCylinderEdgeMesh(
+                        baseVerts[i],
+                        baseVerts[next],
+                        0x00f2fe,
+                        `Arista de la Base (${i + 1})`,
+                        `Lado del polígono de la base de la pirámide.`
+                    );
+                    const eLat = createCylinderEdgeMesh(
+                        baseVerts[i],
+                        apexVert,
+                        edgeNeonColor,
+                        `Arista Lateral (${i + 1})`,
+                        `Segmento que sube desde un vértice de la base hasta la cúspide.`
+                    );
+                    solidRootGroup.add(eBase, eLat);
+                    edgeMeshList.push(eBase, eLat);
+                    interactiveMeshes.push(eBase, eLat);
+                }
+
+                // 4. Vértices de la Base + Vértice Cúspide
+                for (let i = 0; i < n; i++) {
+                    const vBase = createSphereVertexMesh(
+                        baseVerts[i],
+                        vertexNeonColor,
+                        `Vértice de la Base ${i + 1}`,
+                        `Esquina del polígono de la base.`
+                    );
+                    solidRootGroup.add(vBase);
+                    vertexMeshList.push(vBase);
+                    interactiveMeshes.push(vBase);
+                }
+
+                const vApex = createSphereVertexMesh(
+                    apexVert,
+                    0xfe0979,
+                    `Vértice Superior (Cúspide)`,
+                    `Punto más alto donde se unen todas las caras laterales de la pirámide.`
+                );
+                vApex.scale.set(1.25, 1.25, 1.25);
+                solidRootGroup.add(vApex);
+                vertexMeshList.push(vApex);
+                interactiveMeshes.push(vApex);
+            }
+
+            applyCategoryFilterStyle(currentHighlightCategory);
+        }
+
+        function handlePointerRaycast(clientX, clientY) {
+            const canvas = document.getElementById('solid3DCanvas');
+            const rect = canvas.getBoundingClientRect();
+
+            mouseNDC.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            mouseNDC.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouseNDC, solidCamera);
+            const intersects = raycaster.intersectObjects(interactiveMeshes, false);
+
+            if (intersects.length > 0) {
+                // Priorizar Vértices y Aristas cuando el puntero está cerca para que sean muy fáciles de seleccionar
+                let picked = intersects[0].object;
+                const vertHit = intersects.find(hit => hit.object.userData.elemCategory === 'VERTICE');
+                const edgeHit = intersects.find(hit => hit.object.userData.elemCategory === 'ARISTA');
+                if (vertHit) picked = vertHit.object;
+                else if (edgeHit) picked = edgeHit.object;
+
+                if (hoveredObject !== picked) {
+                    clearHoveredElement();
+                    hoveredObject = picked;
+                    highlightSingleObject(picked);
+                    playSound('hover');
+                }
+
+                updateFloatingTooltip(picked, clientX - rect.left, clientY - rect.top, rect.width, rect.height);
+            } else {
+                clearHoveredElement();
+                hideFloatingTooltip();
+            }
+        }
+
+        function highlightSingleObject(mesh) {
+            if (!mesh || !mesh.userData) return;
+            const cat = mesh.userData.elemCategory;
+
+            const dot = document.getElementById('hoveredElementDot');
+            const title = document.getElementById('hoveredElementTitle');
+            const sub = document.getElementById('hoveredElementSub');
+
+            if (cat === 'VERTICE') {
+                mesh.scale.set(1.75, 1.75, 1.75);
+                mesh.material.emissive.setHex(0xffffff);
+                mesh.material.emissiveIntensity = 1.4;
+                if (dot) dot.className = "w-3.5 h-3.5 rounded-full bg-yellow-400 shadow-[0_0_12px_#facc15]";
+            } else if (cat === 'ARISTA') {
+                mesh.scale.set(1.85, 1, 1.85);
+                mesh.material.emissive.setHex(0xffffff);
+                mesh.material.emissiveIntensity = 1.3;
+                if (dot) dot.className = "w-3.5 h-3.5 rounded-full bg-[#39ff14] shadow-[0_0_12px_#39ff14]";
+            } else if (cat === 'CARA') {
+                mesh.material.opacity = 0.96;
+                mesh.material.emissiveIntensity = 0.65;
+                if (dot) dot.className = "w-3.5 h-3.5 rounded-full bg-pink-500 shadow-[0_0_12px_#fe0979]";
+            }
+
+            if (title) title.textContent = `${cat}: ${mesh.userData.elemTitle}`;
+            if (sub) sub.textContent = mesh.userData.elemDesc;
+        }
+
+        function clearHoveredElement() {
+            if (!hoveredObject) return;
+            applyCategoryFilterStyle(currentHighlightCategory);
+            hoveredObject = null;
+        }
+
+        function updateFloatingTooltip(mesh, relX, relY, boxW, boxH) {
+            const tooltip = document.getElementById('floating3DTooltip');
+            if (!labelsEnabled) {
+                tooltip.classList.add('hidden');
+                return;
+            }
+            tooltip.classList.remove('hidden');
+
+            document.getElementById('tooltipBadge').textContent = `ELEMENTO: ${mesh.userData.elemCategory}`;
+            document.getElementById('tooltipTitle').textContent = mesh.userData.elemTitle;
+            document.getElementById('tooltipDesc').textContent = mesh.userData.elemDesc;
+
+            const leftPos = Math.min(Math.max(relX + 16, 12), boxW - 245);
+            const topPos = Math.min(Math.max(relY - 20, 12), boxH - 110);
+            tooltip.style.left = `${leftPos}px`;
+            tooltip.style.top = `${topPos}px`;
+        }
+
+        function hideFloatingTooltip() {
+            const tooltip = document.getElementById('floating3DTooltip');
+            if (tooltip) tooltip.classList.add('hidden');
+        }
+
+        function toggleLabelsVisibility() {
+            labelsEnabled = !labelsEnabled;
+            playSound('switch');
+            const btn = document.getElementById('toggleLabelsBtn');
+            const text = document.getElementById('toggleLabelsText');
+            if (labelsEnabled) {
+                btn.className = "px-3.5 py-1.5 rounded-xl font-black text-xs bg-emerald-500 text-black border-b-2 border-emerald-800 transition-all flex items-center gap-1.5 shadow-md";
+                text.textContent = "ETIQUETAS: ON";
+            } else {
+                btn.className = "px-3.5 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-slate-300 border border-slate-600 transition-all flex items-center gap-1.5";
+                text.textContent = "ETIQUETAS: OFF";
+                hideFloatingTooltip();
+            }
+        }
+
+        function setHighlightElement(category) {
+            currentHighlightCategory = category;
+            playSound('switch');
+            ['ALL', 'CARA', 'VERTICE', 'ARISTA'].forEach(cat => {
+                const btn = document.getElementById(`hlBtn-${cat}`);
+                if (!btn) return;
+                if (cat === category) {
+                    btn.className = "px-3 py-1.5 rounded-xl font-black text-xs bg-cyan-400 text-black shadow-[0_0_15px_rgba(0,242,254,0.5)] transition-all";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-xl font-black text-xs bg-slate-800 text-slate-200 border border-slate-600 hover:bg-slate-700 transition-all";
+                }
+            });
+
+            applyCategoryFilterStyle(category);
+
+            const s = SOLIDS_DATA[currentSolidIdx];
+            if (category === 'CARA') {
+                updateRobotSpeech(`¡Observa las <b>Caras (<span class="math-expr math-var">C</span>)</b>! El <b>${s.name}</b> tiene: ${s.hintC}. Escribe ese número en la casilla <span class="math-expr math-var">C</span>.`);
+            } else if (category === 'VERTICE') {
+                updateRobotSpeech(`¡Observa los <b>Vértices (<span class="math-expr math-var">V</span>)</b>! Son las esferas brillantes en las esquinas: ${s.hintV}.`);
+            } else if (category === 'ARISTA') {
+                updateRobotSpeech(`¡Observa las <b>Aristas (<span class="math-expr math-var">A</span>)</b>! Son las barras luminosas que unen los vértices: ${s.hintA}.`);
+            }
+        }
+
+        function applyCategoryFilterStyle(category) {
+            faceMeshList.forEach(f => {
+                f.material.color.setHex(f.userData.baseColor);
+                f.material.emissive.setHex(f.userData.baseColor);
+                if (category === 'ALL' || category === 'CARA') {
+                    f.material.opacity = category === 'CARA' ? 0.92 : f.userData.baseOpacity;
+                    f.material.emissiveIntensity = category === 'CARA' ? 0.45 : f.userData.baseEmissive;
+                } else {
+                    f.material.opacity = 0.16;
+                    f.material.emissiveIntensity = 0.05;
+                }
+            });
+
+            edgeMeshList.forEach(e => {
+                e.scale.set(1, 1, 1);
+                e.material.color.setHex(e.userData.baseColor);
+                e.material.emissive.setHex(e.userData.baseColor);
+                e.material.emissiveIntensity = (category === 'ARISTA') ? 1.25 : e.userData.baseEmissive;
+                if (category === 'ARISTA') e.scale.set(1.5, 1, 1.5);
+            });
+
+            vertexMeshList.forEach(v => {
+                v.scale.set(1, 1, 1);
+                v.material.color.setHex(v.userData.baseColor);
+                v.material.emissive.setHex(v.userData.baseColor);
+                v.material.emissiveIntensity = (category === 'VERTICE') ? 1.35 : v.userData.baseEmissive;
+                if (category === 'VERTICE') v.scale.set(1.55, 1.55, 1.55);
+            });
+        }
+
+        function toggleAutoRotate() {
+            autoRotateSolid = !autoRotateSolid;
+            playSound('switch');
+            const btn = document.getElementById('autoRotateBtn');
+            btn.innerHTML = autoRotateSolid
+                ? `<i class="fa-solid fa-sync fa-spin mr-1"></i> Giro: ON`
+                : `<i class="fa-solid fa-pause mr-1"></i> Giro: OFF`;
+        }
+
+        function zoomCamera(delta) {
+            cameraDistance = Math.max(3.6, Math.min(9.5, cameraDistance + delta));
+            if (solidCamera) solidCamera.position.z = cameraDistance;
+        }
+
+        function setCameraView(view) {
+            playSound('switch');
+            autoRotateSolid = false;
+            document.getElementById('autoRotateBtn').innerHTML = `<i class="fa-solid fa-pause mr-1"></i> Giro: OFF`;
+            if (view === 'FRONT') {
+                targetRotX = 0.25;
+                targetRotY = -0.5;
+            } else if (view === 'TOP') {
+                targetRotX = 1.35;
+                targetRotY = 0;
+            } else if (view === 'BOTTOM') {
+                targetRotX = -1.35;
+                targetRotY = 0;
+                updateRobotSpeech(`¡Vista desde abajo activada! Así tus alumnos pueden contar los lados y vértices de la base inferior con total claridad.`);
+            }
+        }
+
+        function setStatusBadge(elId, isValid, isEmpty) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (isEmpty) {
+                el.innerHTML = `<span class="w-7 h-7 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-minus"></i></span>`;
+            } else if (isValid) {
+                el.innerHTML = `<span class="w-7 h-7 rounded-full bg-[#39ff14] text-black flex items-center justify-center text-xs font-black shadow-[0_0_10px_#39ff14]"><i class="fa-solid fa-check"></i></span>`;
+            } else {
+                el.innerHTML = `<span class="w-7 h-7 rounded-full bg-[#fe0979] text-white flex items-center justify-center text-xs font-black"><i class="fa-solid fa-xmark"></i></span>`;
+            }
+        }
+
+        function validateEulerInputs(suppressAudio = false) {
+            const s = SOLIDS_DATA[currentSolidIdx];
+
+            const inC = document.getElementById('inputEulerC');
+            const inV = document.getElementById('inputEulerV');
+            const inA = document.getElementById('inputEulerA');
+
+            const valC = parseInt(inC.value, 10);
+            const valV = parseInt(inV.value, 10);
+            const valA = parseInt(inA.value, 10);
+
+            // Validar C
+            if (inC.value.trim() === '') {
+                inC.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusEulerC', false, true);
+                completedFlags.eulerC = false;
+            } else if (valC === s.C) {
+                if (!completedFlags.eulerC && !suppressAudio) playSound('valid', 0);
+                inC.classList.add('valid-input');
+                inC.classList.remove('invalid-input');
+                setStatusBadge('statusEulerC', true, false);
+                completedFlags.eulerC = true;
+            } else {
+                inC.classList.add('invalid-input');
+                inC.classList.remove('valid-input');
+                setStatusBadge('statusEulerC', false, false);
+                completedFlags.eulerC = false;
+            }
+
+            // Validar V
+            if (inV.value.trim() === '') {
+                inV.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusEulerV', false, true);
+                completedFlags.eulerV = false;
+            } else if (valV === s.V) {
+                if (!completedFlags.eulerV && !suppressAudio) playSound('valid', 1);
+                inV.classList.add('valid-input');
+                inV.classList.remove('invalid-input');
+                setStatusBadge('statusEulerV', true, false);
+                completedFlags.eulerV = true;
+            } else {
+                inV.classList.add('invalid-input');
+                inV.classList.remove('valid-input');
+                setStatusBadge('statusEulerV', false, false);
+                completedFlags.eulerV = false;
+            }
+
+            // Validar A
+            if (inA.value.trim() === '') {
+                inA.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusEulerA', false, true);
+                completedFlags.eulerA = false;
+            } else if (valA === s.A) {
+                if (!completedFlags.eulerA && !suppressAudio) playSound('valid', 2);
+                inA.classList.add('valid-input');
+                inA.classList.remove('invalid-input');
+                setStatusBadge('statusEulerA', true, false);
+                completedFlags.eulerA = true;
+            } else {
+                inA.classList.add('invalid-input');
+                inA.classList.remove('valid-input');
+                setStatusBadge('statusEulerA', false, false);
+                completedFlags.eulerA = false;
+            }
+
+            // Actualizar tarjeta del Teorema de Euler en vivo
+            const dispC = !isNaN(valC) ? valC : '?';
+            const dispV = !isNaN(valV) ? valV : '?';
+            const dispA = !isNaN(valA) ? valA : '?';
+
+            const subBox = document.getElementById('eulerLiveSubstitution');
+            const badge = document.getElementById('eulerStatusBadge');
+            const feedback = document.getElementById('eulerFeedbackText');
+
+            if (completedFlags.eulerC && completedFlags.eulerV && completedFlags.eulerA) {
+                const sumLeft = s.C + s.V;
+                const sumRight = s.A + 2;
+                subBox.innerHTML = `<span class="text-pink-400">${s.C}</span> + <span class="text-yellow-400">${s.V}</span> = <span class="text-[#39ff14]">${s.A}</span> + 2 &nbsp;⇒&nbsp; <b class="text-[#39ff14]">${sumLeft} = ${sumRight}</b>`;
+                badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-[#39ff14] text-black uppercase";
+                badge.textContent = "¡VERIFICADO!";
+                feedback.innerHTML = `<span class="text-[#39ff14]">¡Relación de Euler comprobada! (${sumLeft} = ${sumRight})</span>`;
+            } else {
+                subBox.innerHTML = `${dispC} + ${dispV} = ${dispA} + 2`;
+                badge.className = "text-[10px] font-black px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 uppercase";
+                badge.textContent = "EN PROGRESO";
+                feedback.textContent = "Ingresa C, V y A para comprobar la igualdad.";
+            }
+
+            updateOverallProgress(suppressAudio);
+        }
+
+        function validateCalculations(suppressAudio = false) {
+            const s = SOLIDS_DATA[currentSolidIdx];
+
+            const inAL = document.getElementById('inputCalcAL');
+            const inAT = document.getElementById('inputCalcAT');
+            const inVol = document.getElementById('inputCalcVol');
+
+            const valAL = parseFloat(inAL.value);
+            const valAT = parseFloat(inAT.value);
+            const valVol = parseFloat(inVol.value);
+
+            // 1. Área Lateral
+            if (inAL.value.trim() === '') {
+                inAL.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusCalcAL', false, true);
+                document.getElementById('stepBoxAL').innerHTML = `Sustituye los datos en la fórmula de <span class="math-expr ml-1"><span class="math-var">A</span><sub>L</sub></span>.`;
+                completedFlags.calcAL = false;
+            } else if (Math.abs(valAL - s.AL) < 0.01) {
+                if (!completedFlags.calcAL && !suppressAudio) playSound('valid', 3);
+                inAL.classList.add('valid-input');
+                inAL.classList.remove('invalid-input');
+                setStatusBadge('statusCalcAL', true, false);
+                document.getElementById('stepBoxAL').innerHTML = `<span class="math-expr text-sm">${s.stepAL}</span>`;
+                completedFlags.calcAL = true;
+            } else {
+                inAL.classList.add('invalid-input');
+                inAL.classList.remove('valid-input');
+                setStatusBadge('statusCalcAL', false, false);
+                completedFlags.calcAL = false;
+            }
+
+            // 2. Área Total
+            if (inAT.value.trim() === '') {
+                inAT.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusCalcAT', false, true);
+                document.getElementById('stepBoxAT').innerHTML = `Suma el Área Lateral más el área de la(s) base(s).`;
+                completedFlags.calcAT = false;
+            } else if (Math.abs(valAT - s.AT) < 0.01) {
+                if (!completedFlags.calcAT && !suppressAudio) playSound('valid', 4);
+                inAT.classList.add('valid-input');
+                inAT.classList.remove('invalid-input');
+                setStatusBadge('statusCalcAT', true, false);
+                document.getElementById('stepBoxAT').innerHTML = `<span class="math-expr text-sm">${s.stepAT}</span>`;
+                completedFlags.calcAT = true;
+            } else {
+                inAT.classList.add('invalid-input');
+                inAT.classList.remove('valid-input');
+                setStatusBadge('statusCalcAT', false, false);
+                completedFlags.calcAT = false;
+            }
+
+            // 3. Volumen
+            if (inVol.value.trim() === '') {
+                inVol.classList.remove('valid-input', 'invalid-input');
+                setStatusBadge('statusCalcVol', false, true);
+                document.getElementById('stepBoxVol').innerHTML = `Calcula el espacio total en <span class="math-expr ml-1">cm<sup>3</sup></span>.`;
+                completedFlags.calcVol = false;
+            } else if (Math.abs(valVol - s.Vol) < 0.01) {
+                if (!completedFlags.calcVol && !suppressAudio) playSound('valid', 5);
+                inVol.classList.add('valid-input');
+                inVol.classList.remove('invalid-input');
+                setStatusBadge('statusCalcVol', true, false);
+                document.getElementById('stepBoxVol').innerHTML = `<span class="math-expr text-sm">${s.stepVol}</span>`;
+                completedFlags.calcVol = true;
+            } else {
+                inVol.classList.add('invalid-input');
+                inVol.classList.remove('valid-input');
+                setStatusBadge('statusCalcVol', false, false);
+                completedFlags.calcVol = false;
+            }
+
+            updateOverallProgress(suppressAudio);
+        }
+
+        function updateOverallProgress(suppressAudio = false) {
+            const totalDone = Object.values(completedFlags).filter(Boolean).length;
+            document.getElementById('studentProgressBadge').textContent = `RETOS COMPLETADOS: ${totalDone} / 6`;
+            document.getElementById('exerciseProgressBar').style.width = `${(totalDone / 6) * 100}%`;
+
+            if (totalDone === 6 && !suppressAudio) {
+                playSound('celebrate');
+                const s = SOLIDS_DATA[currentSolidIdx];
+                updateRobotSpeech(
+                    `¡Felicitaciones Aula N.° 2! Completaron el <b>${s.name}</b>: Euler (<span class="math-expr">${s.C} + ${s.V} = ${s.A} + 2</span>), <span class="math-expr">A<sub>L</sub> = ${s.AL} cm²</span>, <span class="math-expr">A<sub>T</sub> = ${s.AT} cm²</span> y <span class="math-expr">V = ${s.Vol} cm³</span>.`
+                );
+            }
+        }
+
+        function explainSolidNameRule() {
+            const s = SOLIDS_DATA[currentSolidIdx];
+            playSound('switch');
+            setRobotMood('happy');
+            updateRobotSpeech(`<b>¿Por qué se llama ${s.name}?</b> ${s.namingRule}`);
+        }
+
+        function giveNextChallengeHint() {
+            const s = SOLIDS_DATA[currentSolidIdx];
+            playSound('switch');
+            setRobotMood('thinking');
+
+            if (!completedFlags.eulerC) {
+                setHighlightElement('CARA');
+                updateRobotSpeech(`Pista para Caras (<span class="math-expr math-var">C</span>): ${s.hintC}.`);
+                document.getElementById('inputEulerC').focus();
+            } else if (!completedFlags.eulerV) {
+                setHighlightElement('VERTICE');
+                updateRobotSpeech(`Pista para Vértices (<span class="math-expr math-var">V</span>): ${s.hintV}.`);
+                document.getElementById('inputEulerV').focus();
+            } else if (!completedFlags.eulerA) {
+                setHighlightElement('ARISTA');
+                updateRobotSpeech(`Pista para Aristas (<span class="math-expr math-var">A</span>): ${s.hintA}.`);
+                document.getElementById('inputEulerA').focus();
+            } else if (!completedFlags.calcAL) {
+                updateRobotSpeech(`Pista Área Lateral: <span class="math-expr text-cyan-300 ml-1">${s.stepAL}</span>`);
+                document.getElementById('inputCalcAL').focus();
+            } else if (!completedFlags.calcAT) {
+                updateRobotSpeech(`Pista Área Total: <span class="math-expr text-pink-300 ml-1">${s.stepAT}</span>`);
+                document.getElementById('inputCalcAT').focus();
+            } else if (!completedFlags.calcVol) {
+                updateRobotSpeech(`Pista Volumen: <span class="math-expr text-[#39ff14] ml-1">${s.stepVol}</span>`);
+                document.getElementById('inputCalcVol').focus();
+            } else {
+                updateRobotSpeech(`¡Ya resolviste las 6 casillas de este sólido! Elige otro ejercicio arriba.`);
+            }
+        }
+
+        function clearDemoTimers() {
+            demoTimers.forEach(t => clearTimeout(t));
+            demoTimers = [];
+        }
+
+        function autoCompleteCurrentSolid() {
+            clearDemoTimers();
+            const s = SOLIDS_DATA[currentSolidIdx];
+            const steps = [
+                { id: 'inputEulerC', val: s.C, fn: () => validateEulerInputs(false) },
+                { id: 'inputEulerV', val: s.V, fn: () => validateEulerInputs(false) },
+                { id: 'inputEulerA', val: s.A, fn: () => validateEulerInputs(false) },
+                { id: 'inputCalcAL', val: s.AL, fn: () => validateCalculations(false) },
+                { id: 'inputCalcAT', val: s.AT, fn: () => validateCalculations(false) },
+                { id: 'inputCalcVol', val: s.Vol, fn: () => validateCalculations(false) }
+            ];
+
+            steps.forEach((st, idx) => {
+                const t = setTimeout(() => {
+                    const el = document.getElementById(st.id);
+                    if (el) {
+                        el.value = st.val;
+                        st.fn();
+                    }
+                }, idx * 320);
+                demoTimers.push(t);
+            });
+        }
+
+        function resetStudentInputs() {
+            clearDemoTimers();
+            playSound('switch');
+            ['inputEulerC', 'inputEulerV', 'inputEulerA', 'inputCalcAL', 'inputCalcAT', 'inputCalcVol'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            validateEulerInputs(true);
+            validateCalculations(true);
+            setHighlightElement('ALL');
+        }
+
+        function enterExerciseFromCover(index) {
+            document.getElementById('coverPortalSection').classList.add('hidden');
+            document.getElementById('labWorkspaceWrapper').classList.remove('hidden');
+            selectSolidExercise(index, false);
+            setTimeout(() => {
+                onWindowResize();
+            }, 60);
+        }
+
+        function openCoverPortal() {
+            clearDemoTimers();
+            playSound('switch');
+            document.getElementById('labWorkspaceWrapper').classList.add('hidden');
+            document.getElementById('coverPortalSection').classList.remove('hidden');
+        }
+
+        function selectSolidExercise(index, isSilent = false) {
+            clearDemoTimers();
+            currentSolidIdx = index;
+            const s = SOLIDS_DATA[index];
+
+            for (let i = 0; i < SOLIDS_DATA.length; i++) {
+                const btn = document.getElementById(`solidBtn-${i}`);
+                if (!btn) continue;
+                if (i === index) {
+                    btn.className = "px-3 py-2 rounded-xl font-black text-xs bg-gradient-to-b from-cyan-400 to-cyan-600 text-black border-b-4 border-cyan-800 shadow-[0_0_15px_rgba(0,242,254,0.4)]";
+                } else {
+                    btn.className = "px-3 py-2 rounded-xl font-bold text-xs bg-slate-800/90 text-slate-300 border border-slate-600 hover:border-cyan-400";
+                }
+            }
+
+            document.getElementById('exerciseSubtitleBadge').textContent = s.subtitle;
+            document.getElementById('solidCategoryBadge').textContent = s.categoryBadge;
+            document.getElementById('baseSidesBadge').textContent = `Base: ${s.basePolygonName}`;
+            document.getElementById('solidTitleDisplay').textContent = s.name;
+            document.getElementById('solidNamingExplanation').textContent = s.namingRule;
+
+            document.getElementById('hintFacesText').textContent = s.type === 'PRISMA'
+                ? `2 bases + ${s.sides} caras laterales`
+                : `1 base + ${s.sides} caras laterales`;
+            document.getElementById('hintVerticesText').textContent = s.type === 'PRISMA'
+                ? `${s.sides} arriba + ${s.sides} abajo`
+                : `${s.sides} en la base + 1 cúspide`;
+            document.getElementById('hintEdgesText').textContent = s.type === 'PRISMA'
+                ? `${s.sides} arriba + ${s.sides} abajo + ${s.sides} laterales`
+                : `${s.sides} en la base + ${s.sides} laterales`;
+
+            // Renderizar cinta de datos dados
+            const ribbon = document.getElementById('givenDataRibbon');
+            ribbon.innerHTML = s.givenData.map(d => `
+                <div class="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-1.5">
+                    <span class="text-[11px] font-bold text-slate-400">${d.label}:</span>
+                    <span class="math-expr text-sm font-bold text-yellow-400">${d.val}</span>
+                </div>
+            `).join('');
+
+            // Fórmulas
+            document.getElementById('formulaALDisplay').innerHTML = s.formulaAL;
+            document.getElementById('formulaATDisplay').innerHTML = s.formulaAT;
+            document.getElementById('formulaVolDisplay').innerHTML = s.formulaVol;
+
+            // Limpiar inputs para que el alumno los complete
+            ['inputEulerC', 'inputEulerV', 'inputEulerA', 'inputCalcAL', 'inputCalcAT', 'inputCalcVol'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+
+            currentHighlightCategory = 'ALL';
+            buildCompleteSolid3D(s);
+            validateEulerInputs(true);
+            validateCalculations(true);
+
+            if (!isSilent) playSound('switch');
+            setRobotMood('happy');
+            updateRobotSpeech(
+                `Explorando el <b>${s.name}</b>. Pasa el mouse sobre sus <b>Caras, Vértices y Aristas</b> para que resalten y completa las casillas.`
+            );
+        }
+
+        function animateAll() {
+            requestAnimationFrame(animateAll);
+            const t = performance.now() * 0.0035;
+
+            // Animación del rostro Robot 3D
+            if (headGroup) {
+                headGroup.position.y = Math.sin(t) * 0.06;
+                const isBlinking = Math.sin(t * 0.9) > 0.985;
+                if (leftEye && rightEye) {
+                    const targetScaleY = isBlinking ? 0.12 : 1.15;
+                    leftEye.scale.y += (targetScaleY - leftEye.scale.y) * 0.35;
+                    rightEye.scale.y += (targetScaleY - rightEye.scale.y) * 0.35;
+                }
+                if (moodTimer > 0) moodTimer--;
+                else if (!isDraggingRobot) {
+                    headGroup.rotation.y += (Math.sin(t * 0.6) * 0.16 - headGroup.rotation.y) * 0.05;
+                }
+            }
+            if (robotRenderer && robotScene && robotCamera) {
+                robotRenderer.render(robotScene, robotCamera);
+            }
+
+            // Animación del Sólido Geométrico 3D
+            if (solidRootGroup) {
+                if (autoRotateSolid && !isDraggingSolid && !hoveredObject) {
+                    targetRotY += 0.0045;
+                }
+                solidRootGroup.rotation.x += (targetRotX - solidRootGroup.rotation.x) * 0.14;
+                solidRootGroup.rotation.y += (targetRotY - solidRootGroup.rotation.y) * 0.14;
+            }
+            if (solidRenderer && solidScene && solidCamera) {
+                solidRenderer.render(solidScene, solidCamera);
+            }
+        }
+
+        function onWindowResize() {
+            const robotContainer = document.getElementById('robotCanvasContainer');
+            if (robotContainer && robotRenderer && robotCamera) {
+                const rw = robotContainer.clientWidth || 128;
+                const rh = robotContainer.clientHeight || 128;
+                robotCamera.aspect = rw / rh;
+                robotCamera.updateProjectionMatrix();
+                robotRenderer.setSize(rw, rh);
+            }
+
+            const wrapper = document.getElementById('solidViewportWrapper');
+            if (wrapper && solidRenderer && solidCamera) {
+                const sw = wrapper.clientWidth || 720;
+                const sh = wrapper.clientHeight || 520;
+                solidCamera.aspect = sw / sh;
+                solidCamera.updateProjectionMatrix();
+                solidRenderer.setSize(sw, sh);
+            }
+        }
+
+        window.onload = function () {
+            initRobot3D();
+            initSolid3DViewport();
+            selectSolidExercise(0, true);
+            animateAll();
+            window.addEventListener('resize', onWindowResize);
+        };
+    </script>
+</body>
+</html>
